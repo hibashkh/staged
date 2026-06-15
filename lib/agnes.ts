@@ -1,5 +1,5 @@
 import products from "@/data/products.json";
-import type { ListingCopy, MatchedItem, Product, Style } from "./types";
+import type { ListingCopy, MatchedItem, PresetStyle, Product, Style } from "./types";
 
 const BASE_URL = process.env.AGNES_BASE_URL ?? "https://apihub.agnes-ai.com/v1";
 const API_KEY = process.env.AGNES_API_KEY;
@@ -11,7 +11,7 @@ function authHeaders(extra?: Record<string, string>) {
   };
 }
 
-export const STYLE_PROMPTS: Record<Style, string> = {
+export const STYLE_PROMPTS: Record<PresetStyle, string> = {
   scandi:
     "Restyle this room in a Scandinavian interior design style: light oak wood tones, white and cream walls, cozy linen textiles, rattan accents, minimal clutter, soft natural daylight.",
   muji:
@@ -59,14 +59,55 @@ export async function detectRoomType(imageDataUrl: string): Promise<string> {
   return String(raw).trim().toLowerCase().replace(/[^a-z\s]/g, "") || "room";
 }
 
-function buildRestylePrompt(style: Style, roomType: string, additions: string[] = []): string {
+/**
+ * Vision call that turns an inspiration photo into a restyle instruction,
+ * so a user-supplied reference image can drive the style instead of a preset.
+ */
+export async function describeStyleFromImage(imageDataUrl: string): Promise<string> {
+  const res = await fetch(`${BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      model: "agnes-2.0-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "This is an interior design inspiration photo. Describe its design style, color palette, " +
+                "materials, furniture shapes, and lighting in 2-3 sentences, written as an instruction for " +
+                'restyling a different room to match. Start with "Restyle this room in the style of the ' +
+                'reference photo:".',
+            },
+            {
+              type: "image_url",
+              image_url: { url: imageDataUrl },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Style description failed: ${res.status} ${await res.text()}`);
+
+  const data = await res.json();
+  const raw = data?.choices?.[0]?.message?.content ?? "";
+  const text = String(raw).trim();
+  if (!text) throw new Error("No style description returned");
+  return text;
+}
+
+function buildRestylePrompt(stylePrompt: string, roomType: string, additions: string[] = []): string {
   const additionsText =
     additions.length > 0
       ? ` Also add the following to the room, styled to match: ${additions.join(", ")}.`
       : "";
 
   return (
-    `This photo shows a ${roomType}. ${STYLE_PROMPTS[style]} ` +
+    `This photo shows a ${roomType}. ${stylePrompt} ` +
     `This must remain a ${roomType} — keep all built-in fixtures, appliances, plumbing, and the room's function exactly as they are ` +
     `(do not add furniture or fixtures belonging to a different room type, e.g. do not add a bed, sofa, or dining table to a ${roomType} unless it normally has one).` +
     `${additionsText} ` +
@@ -97,10 +138,19 @@ export async function restyleRoom(
   imageDataUrl: string,
   style: Style,
   roomType?: string,
-  additions: string[] = []
+  additions: string[] = [],
+  inspirationImageDataUrl?: string
 ): Promise<RestyleResult> {
   const resolvedRoomType = roomType || (await detectRoomType(imageDataUrl));
-  const prompt = buildRestylePrompt(style, resolvedRoomType, additions);
+
+  const stylePrompt =
+    style === "inspiration"
+      ? inspirationImageDataUrl
+        ? await describeStyleFromImage(inspirationImageDataUrl)
+        : "Restyle this room with a fresh, cohesive, modern interior design."
+      : STYLE_PROMPTS[style];
+
+  const prompt = buildRestylePrompt(stylePrompt, resolvedRoomType, additions);
 
   const editRes = await fetch(`${BASE_URL}/images/generations`, {
     method: "POST",
@@ -219,8 +269,7 @@ export function matchItemsToCatalog(
   const candidates: { name: string; category: string }[] =
     items.length > 0
       ? items
-      : catalog
-          .filter((p) => p.style === style)
+      : (catalog.filter((p) => p.style === style).length > 0 ? catalog.filter((p) => p.style === style) : catalog)
           .slice(0, 4)
           .map((product) => ({ name: product.name, category: product.category }));
 
@@ -237,6 +286,7 @@ export function matchItemsToCatalog(
           (name.includes(p.category) || p.category.includes(category))
       ),
       ...catalog.filter((p) => p.style === style),
+      ...catalog,
     ];
 
     const product =
@@ -331,7 +381,7 @@ export async function generateWalkthroughVideo(
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       model: "agnes-video-v2.0",
-      prompt: `Slow, smooth camera pan and gentle zoom across this ${style}-styled room, like a real-estate walkthrough. Keep motion subtle and steady.`,
+      prompt: `Slow, smooth camera pan and gentle zoom across this ${style === "inspiration" ? "newly restyled" : `${style}-styled`} room, like a real-estate walkthrough. Keep motion subtle and steady.`,
       image: sourceImageUrl,
       num_frames: 121,
       frame_rate: 24,

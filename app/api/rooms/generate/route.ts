@@ -10,14 +10,19 @@ const VARIANT_COUNT = 1;
 
 export async function POST(req: NextRequest) {
   try {
-    const { image, style, roomType, additions, budget } = await req.json();
+    const { image, style, roomType, additions, budget, inspirationImage } = await req.json();
 
     if (typeof image !== "string" || !image.startsWith("data:image")) {
       return NextResponse.json({ error: "Missing or invalid 'image' data URL" }, { status: 400 });
     }
-    if (!["scandi", "muji", "luxe", "industrial"].includes(style)) {
+    if (!["scandi", "muji", "luxe", "industrial", "inspiration"].includes(style)) {
       return NextResponse.json({ error: "Invalid 'style'" }, { status: 400 });
     }
+
+    const safeInspirationImage =
+      typeof inspirationImage === "string" && inspirationImage.startsWith("data:image")
+        ? inspirationImage
+        : undefined;
 
     const safeRoomType = typeof roomType === "string" && roomType ? roomType : undefined;
     const safeAdditions = Array.isArray(additions)
@@ -31,7 +36,8 @@ export async function POST(req: NextRequest) {
           image,
           style as Style,
           safeRoomType,
-          safeAdditions
+          safeAdditions,
+          safeInspirationImage
         );
         const rawItems = await extractItems(afterImage);
         const { items, totalCost } = matchItemsToCatalog(rawItems, style as Style, safeBudget);

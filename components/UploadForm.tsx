@@ -23,7 +23,8 @@ export default function UploadForm({
     roomType: RoomType,
     additions: string[],
     budget: number | null,
-    projectId: string | null
+    projectId: string | null,
+    inspirationImage: string | null
   ) => void;
   loading: boolean;
 }) {
@@ -36,7 +37,9 @@ export default function UploadForm({
   const [otherFurniture, setOtherFurniture] = useState("");
   const [budget, setBudget] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [inspirationPreview, setInspirationPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inspirationInputRef = useRef<HTMLInputElement>(null);
 
   const handleProjectChange = (id: string | null) => {
     setProjectId(id);
@@ -57,6 +60,12 @@ export default function UploadForm({
   const handleFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleInspirationFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => setInspirationPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -110,6 +119,38 @@ export default function UploadForm({
 
       <StylePicker value={style} onChange={setStyle} />
 
+      {style === "inspiration" && (
+        <div
+          onClick={() => inspirationInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleInspirationFile(file);
+          }}
+          className="rounded-xl border-2 border-dashed border-neutral-300 p-4 text-center cursor-pointer hover:border-neutral-400 transition"
+        >
+          {inspirationPreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={inspirationPreview} alt="Inspiration preview" className="max-h-40 mx-auto rounded-lg" />
+          ) : (
+            <p className="text-sm text-neutral-500">
+              Click or drag an inspiration photo here — we'll match its style
+            </p>
+          )}
+          <input
+            ref={inspirationInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleInspirationFile(file);
+            }}
+          />
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
           Furniture budget (optional)
@@ -154,7 +195,8 @@ export default function UploadForm({
             roomType,
             additions,
             parsedBudget && parsedBudget > 0 ? parsedBudget : null,
-            projectId
+            projectId,
+            style === "inspiration" ? inspirationPreview : null
           );
         }}
         className="w-full rounded-xl bg-neutral-900 text-white py-3 font-medium disabled:opacity-40"

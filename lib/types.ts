@@ -1,9 +1,10 @@
-export type Style = "scandi" | "muji" | "luxe" | "industrial";
+export type PresetStyle = "scandi" | "muji" | "luxe" | "industrial";
+export type Style = PresetStyle | "inspiration";
 
 export interface Product {
   name: string;
   category: string;
-  style: Style;
+  style: PresetStyle;
   retailer: string;
   price: number;
   url: string;

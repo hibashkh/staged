@@ -7,6 +7,7 @@ const STYLES: { id: Style; label: string; blurb: string }[] = [
   { id: "muji", label: "Muji", blurb: "Minimal, calm, natural" },
   { id: "luxe", label: "Luxe", blurb: "Velvet, brass, marble" },
   { id: "industrial", label: "Industrial", blurb: "Brick, metal, leather" },
+  { id: "inspiration", label: "Inspiration", blurb: "Upload a photo to match" },
 ];
 
 export default function StylePicker({

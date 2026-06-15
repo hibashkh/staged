@@ -18,6 +18,7 @@ interface PendingInput {
   additions: string[];
   budget: number | null;
   projectId: string | null;
+  inspirationImage: string | null;
 }
 
 export default function Home() {
@@ -109,6 +110,7 @@ export default function Home() {
           roomType: input.roomType,
           additions: input.additions,
           budget: input.budget,
+          inspirationImage: input.inspirationImage,
         }),
       });
 
@@ -131,9 +133,10 @@ export default function Home() {
     roomType: RoomType,
     additions: string[],
     budget: number | null,
-    projectId: string | null
+    projectId: string | null,
+    inspirationImage: string | null
   ) => {
-    runGenerate({ image, style, withVideo, roomType, additions, budget, projectId });
+    runGenerate({ image, style, withVideo, roomType, additions, budget, projectId, inspirationImage });
   };
 
   const handleRetry = () => {
