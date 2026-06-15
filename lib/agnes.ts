@@ -296,7 +296,7 @@ export async function generateWalkthroughVideo(
       model: "agnes-video-v2.0",
       prompt: `Slow, smooth camera pan and gentle zoom across this ${style}-styled room, like a real-estate walkthrough. Keep motion subtle and steady.`,
       image: sourceImageUrl,
-      num_frames: 441,
+      num_frames: 401,
       frame_rate: 24,
     }),
   });
