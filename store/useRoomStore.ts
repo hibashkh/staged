@@ -6,6 +6,7 @@ interface RoomStore {
   rooms: Room[];
   addRoom: (room: Room) => void;
   removeRoom: (id: string) => void;
+  updateRoom: (id: string, changes: Partial<Room>) => void;
 }
 
 export const useRoomStore = create<RoomStore>()(
@@ -16,6 +17,10 @@ export const useRoomStore = create<RoomStore>()(
         set((state) => ({ rooms: [room, ...state.rooms] })),
       removeRoom: (id) =>
         set((state) => ({ rooms: state.rooms.filter((r) => r.id !== id) })),
+      updateRoom: (id, changes) =>
+        set((state) => ({
+          rooms: state.rooms.map((r) => (r.id === id ? { ...r, ...changes } : r)),
+        })),
     }),
     { name: "staged-rooms" }
   )

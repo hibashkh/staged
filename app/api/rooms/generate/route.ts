@@ -4,13 +4,12 @@ import {
   extractItems,
   matchItemsToCatalog,
   generateListingCopy,
-  generateWalkthroughVideo,
 } from "@/lib/agnes";
 import type { Style } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const { image, style, withVideo, roomType, additions } = await req.json();
+    const { image, style, roomType, additions } = await req.json();
 
     if (typeof image !== "string" || !image.startsWith("data:image")) {
       return NextResponse.json({ error: "Missing or invalid 'image' data URL" }, { status: 400 });
@@ -34,20 +33,7 @@ export async function POST(req: NextRequest) {
     const items = matchItemsToCatalog(rawItems, style as Style);
     const listingCopy = await generateListingCopy(style as Style, rawItems);
 
-    let videoUrl: string | null = null;
-    let videoError: string | null = null;
-    if (withVideo) {
-      try {
-        if (!sourceUrl) throw new Error("No image URL available for video generation");
-        videoUrl = await generateWalkthroughVideo(sourceUrl, style as Style);
-      } catch (err: any) {
-        videoUrl = null;
-        videoError = err?.message ?? "Video generation failed";
-        console.error("video walkthrough generation failed:", err);
-      }
-    }
-
-    return NextResponse.json({ afterImage, items, listingCopy, videoUrl, videoError });
+    return NextResponse.json({ afterImage, items, listingCopy, sourceUrl });
   } catch (err: any) {
     console.error("generate room failed:", err);
     return NextResponse.json(

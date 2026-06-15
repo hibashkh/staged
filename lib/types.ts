@@ -31,4 +31,6 @@ export interface Room {
   listingCopy: ListingCopy | null;
   videoUrl: string | null;
   videoError?: string | null;
+  sourceUrl?: string | null;
+  videoLoading?: boolean;
 }

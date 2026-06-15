@@ -12,7 +12,7 @@ import type { Room, Style } from "@/lib/types";
 import type { RoomType } from "@/lib/roomOptions";
 
 export default function Home() {
-  const { rooms, addRoom, removeRoom } = useRoomStore();
+  const { rooms, addRoom, removeRoom, updateRoom } = useRoomStore();
   const [active, setActive] = useState<Room | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,12 +44,41 @@ export default function Home() {
         afterImage: data.afterImage,
         items: data.items,
         listingCopy: data.listingCopy,
-        videoUrl: data.videoUrl,
-        videoError: data.videoError ?? null,
+        videoUrl: null,
+        videoError: null,
+        sourceUrl: data.sourceUrl ?? null,
+        videoLoading: withVideo,
       };
 
       addRoom(room);
       setActive(room);
+
+      if (withVideo && data.sourceUrl) {
+        fetch("/api/rooms/video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sourceUrl: data.sourceUrl, style }),
+        })
+          .then((r) => r.json())
+          .then((videoData) => {
+            const changes = {
+              videoUrl: videoData.videoUrl ?? null,
+              videoError: videoData.videoError ?? null,
+              videoLoading: false,
+            };
+            updateRoom(room.id, changes);
+            setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
+          })
+          .catch((err) => {
+            const changes = { videoUrl: null, videoError: err?.message ?? "Video generation failed", videoLoading: false };
+            updateRoom(room.id, changes);
+            setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
+          });
+      } else if (withVideo) {
+        const changes = { videoUrl: null, videoError: "No image URL available for video generation", videoLoading: false };
+        updateRoom(room.id, changes);
+        setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
+      }
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong");
     } finally {
@@ -98,7 +127,7 @@ export default function Home() {
 
           <div>
             <h2 className="font-semibold mb-3">Video walkthrough</h2>
-            <VideoPlayer src={active.videoUrl} error={active.videoError} />
+            <VideoPlayer src={active.videoUrl} error={active.videoError} loading={active.videoLoading} />
           </div>
         </section>
       )}

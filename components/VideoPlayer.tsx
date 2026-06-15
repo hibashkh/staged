@@ -1,14 +1,18 @@
 export default function VideoPlayer({
   src,
   error,
+  loading,
 }: {
   src: string | null;
   error?: string | null;
+  loading?: boolean;
 }) {
   if (!src) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-400">
-        {error ? (
+        {loading ? (
+          "Generating video walkthrough… this can take a couple of minutes."
+        ) : error ? (
           <>
             <p className="text-red-500">Video generation failed: {error}</p>
             <p className="mt-1">Your restyled photo and listing are still ready above.</p>
