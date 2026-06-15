@@ -35,6 +35,16 @@ export interface Room {
   videoLoading?: boolean;
   budget?: number | null;
   totalCost?: number;
+  projectId?: string | null;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  createdAt: number;
+  style?: Style;
+  roomType?: string;
+  budget?: number | null;
 }
 
 export interface RoomVariant {

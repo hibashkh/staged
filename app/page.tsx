@@ -17,10 +17,11 @@ interface PendingInput {
   roomType: RoomType;
   additions: string[];
   budget: number | null;
+  projectId: string | null;
 }
 
 export default function Home() {
-  const { rooms, addRoom, removeRoom, updateRoom } = useRoomStore();
+  const { rooms, projects, addRoom, removeRoom, updateRoom, updateProject } = useRoomStore();
   const [active, setActive] = useState<Room | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export default function Home() {
       videoLoading: input.withVideo,
       budget: input.budget,
       totalCost: variant.totalCost,
+      projectId: input.projectId,
     };
 
     if (existingId) {
@@ -76,6 +78,14 @@ export default function Home() {
       addRoom(room);
     }
     setActive(room);
+
+    if (input.projectId) {
+      updateProject(input.projectId, {
+        style: input.style,
+        roomType: input.roomType,
+        budget: input.budget,
+      });
+    }
 
     if (input.withVideo && variant.sourceUrl) {
       startVideo(room.id, variant.sourceUrl, input.style);
@@ -120,9 +130,10 @@ export default function Home() {
     withVideo: boolean,
     roomType: RoomType,
     additions: string[],
-    budget: number | null
+    budget: number | null,
+    projectId: string | null
   ) => {
-    runGenerate({ image, style, withVideo, roomType, additions, budget });
+    runGenerate({ image, style, withVideo, roomType, additions, budget, projectId });
   };
 
   const handleRetry = () => {
@@ -193,6 +204,7 @@ export default function Home() {
 
       <Gallery
         rooms={rooms}
+        projects={projects}
         onSelect={setActive}
         onRemove={(id) => {
           removeRoom(id);

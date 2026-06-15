@@ -3,8 +3,14 @@
 import { useRef, useState } from "react";
 import StylePicker from "./StylePicker";
 import RoomDetailsForm from "./RoomDetailsForm";
+import ProjectPicker from "./ProjectPicker";
+import { useRoomStore } from "@/store/useRoomStore";
 import type { Style } from "@/lib/types";
-import type { RoomType } from "@/lib/roomOptions";
+import { ROOM_TYPES, type RoomType } from "@/lib/roomOptions";
+
+function isRoomType(value: string | undefined): value is RoomType {
+  return !!value && (ROOM_TYPES as readonly string[]).includes(value);
+}
 
 export default function UploadForm({
   onGenerate,
@@ -16,10 +22,12 @@ export default function UploadForm({
     withVideo: boolean,
     roomType: RoomType,
     additions: string[],
-    budget: number | null
+    budget: number | null,
+    projectId: string | null
   ) => void;
   loading: boolean;
 }) {
+  const { projects, addProject } = useRoomStore();
   const [preview, setPreview] = useState<string | null>(null);
   const [style, setStyle] = useState<Style>("scandi");
   const [withVideo, setWithVideo] = useState(false);
@@ -27,7 +35,24 @@ export default function UploadForm({
   const [selectedFurniture, setSelectedFurniture] = useState<string[]>([]);
   const [otherFurniture, setOtherFurniture] = useState("");
   const [budget, setBudget] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleProjectChange = (id: string | null) => {
+    setProjectId(id);
+    const project = projects.find((p) => p.id === id);
+    if (project) {
+      if (project.style) setStyle(project.style);
+      if (isRoomType(project.roomType)) setRoomType(project.roomType);
+      if (project.budget) setBudget(String(project.budget));
+    }
+  };
+
+  const handleCreateProject = (name: string) => {
+    const id = crypto.randomUUID();
+    addProject({ id, name, createdAt: Date.now() });
+    setProjectId(id);
+  };
 
   const handleFile = (file: File) => {
     const reader = new FileReader();
@@ -66,6 +91,13 @@ export default function UploadForm({
           }}
         />
       </div>
+
+      <ProjectPicker
+        projects={projects}
+        selectedProjectId={projectId}
+        onChange={handleProjectChange}
+        onCreate={handleCreateProject}
+      />
 
       <RoomDetailsForm
         roomType={roomType}
@@ -121,7 +153,8 @@ export default function UploadForm({
             withVideo,
             roomType,
             additions,
-            parsedBudget && parsedBudget > 0 ? parsedBudget : null
+            parsedBudget && parsedBudget > 0 ? parsedBudget : null,
+            projectId
           );
         }}
         className="w-full rounded-xl bg-neutral-900 text-white py-3 font-medium disabled:opacity-40"
