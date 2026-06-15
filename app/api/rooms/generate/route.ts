@@ -3,13 +3,14 @@ import {
   restyleRoom,
   extractItems,
   matchItemsToCatalog,
-  generateListingCopy,
 } from "@/lib/agnes";
 import type { Style } from "@/lib/types";
 
+const VARIANT_COUNT = 3;
+
 export async function POST(req: NextRequest) {
   try {
-    const { image, style, roomType, additions } = await req.json();
+    const { image, style, roomType, additions, budget } = await req.json();
 
     if (typeof image !== "string" || !image.startsWith("data:image")) {
       return NextResponse.json({ error: "Missing or invalid 'image' data URL" }, { status: 400 });
@@ -22,18 +23,24 @@ export async function POST(req: NextRequest) {
     const safeAdditions = Array.isArray(additions)
       ? additions.filter((a): a is string => typeof a === "string" && a.trim().length > 0)
       : [];
+    const safeBudget = typeof budget === "number" && budget > 0 ? budget : undefined;
 
-    const { image: afterImage, sourceUrl } = await restyleRoom(
-      image,
-      style as Style,
-      safeRoomType,
-      safeAdditions
+    const variants = await Promise.all(
+      Array.from({ length: VARIANT_COUNT }, async () => {
+        const { image: afterImage, sourceUrl } = await restyleRoom(
+          image,
+          style as Style,
+          safeRoomType,
+          safeAdditions
+        );
+        const rawItems = await extractItems(afterImage);
+        const { items, totalCost } = matchItemsToCatalog(rawItems, style as Style, safeBudget);
+
+        return { afterImage, sourceUrl, items, totalCost };
+      })
     );
-    const rawItems = await extractItems(afterImage);
-    const items = matchItemsToCatalog(rawItems, style as Style);
-    const listingCopy = await generateListingCopy(style as Style, rawItems);
 
-    return NextResponse.json({ afterImage, items, listingCopy, sourceUrl });
+    return NextResponse.json({ variants });
   } catch (err: any) {
     console.error("generate room failed:", err);
     return NextResponse.json(

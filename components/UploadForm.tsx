@@ -15,7 +15,8 @@ export default function UploadForm({
     style: Style,
     withVideo: boolean,
     roomType: RoomType,
-    additions: string[]
+    additions: string[],
+    budget: number | null
   ) => void;
   loading: boolean;
 }) {
@@ -25,6 +26,7 @@ export default function UploadForm({
   const [roomType, setRoomType] = useState<RoomType>("living room");
   const [selectedFurniture, setSelectedFurniture] = useState<string[]>([]);
   const [otherFurniture, setOtherFurniture] = useState("");
+  const [budget, setBudget] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
@@ -76,6 +78,24 @@ export default function UploadForm({
 
       <StylePicker value={style} onChange={setStyle} />
 
+      <div>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
+          Furniture budget (optional)
+        </label>
+        <input
+          type="number"
+          min="0"
+          inputMode="decimal"
+          value={budget}
+          onChange={(e) => setBudget(e.target.value)}
+          placeholder="e.g. 1500"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        />
+        <p className="text-xs text-neutral-400 mt-1">
+          We'll pick matching furniture that fits within this total.
+        </p>
+      </div>
+
       <label className="flex items-center gap-2 text-sm text-neutral-600">
         <input
           type="checkbox"
@@ -94,7 +114,15 @@ export default function UploadForm({
             ...selectedFurniture,
             ...(otherFurniture.trim() ? [otherFurniture.trim()] : []),
           ];
-          onGenerate(preview, style, withVideo, roomType, additions);
+          const parsedBudget = budget.trim() ? Number(budget) : null;
+          onGenerate(
+            preview,
+            style,
+            withVideo,
+            roomType,
+            additions,
+            parsedBudget && parsedBudget > 0 ? parsedBudget : null
+          );
         }}
         className="w-full rounded-xl bg-neutral-900 text-white py-3 font-medium disabled:opacity-40"
       >

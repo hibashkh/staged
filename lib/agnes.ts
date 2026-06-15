@@ -205,38 +205,67 @@ export async function extractItems(
 }
 
 /**
- * Match extracted items to the mock product catalog by style + category/keyword overlap.
+ * Match extracted items to the mock product catalog by style + category/keyword overlap,
+ * preferring cheaper matches. If a budget is given, items are kept (cheapest-first) only
+ * while the running total stays within budget; the rest are returned with product: null.
  */
 export function matchItemsToCatalog(
   items: { name: string; category: string }[],
-  style: Style
-): MatchedItem[] {
+  style: Style,
+  budget?: number
+): { items: MatchedItem[]; totalCost: number } {
   const catalog = products as Product[];
 
-  if (items.length === 0) {
-    return catalog
-      .filter((p) => p.style === style)
-      .slice(0, 4)
-      .map((product) => ({ name: product.name, category: product.category, product }));
-  }
+  const candidates: { name: string; category: string }[] =
+    items.length > 0
+      ? items
+      : catalog
+          .filter((p) => p.style === style)
+          .slice(0, 4)
+          .map((product) => ({ name: product.name, category: product.category }));
 
-  return items.map((item) => {
+  const matched = candidates.map((item) => {
     const category = item.category.toLowerCase().trim();
     const name = item.name.toLowerCase();
 
-    let product =
-      catalog.find((p) => p.style === style && p.category === category) ??
-      catalog.find((p) => p.category === category) ??
-      catalog.find(
+    const candidatesForItem = [
+      ...catalog.filter((p) => p.style === style && p.category === category),
+      ...catalog.filter((p) => p.category === category),
+      ...catalog.filter(
         (p) =>
           p.style === style &&
           (name.includes(p.category) || p.category.includes(category))
-      ) ??
-      catalog.find((p) => p.style === style) ??
-      null;
+      ),
+      ...catalog.filter((p) => p.style === style),
+    ];
+
+    const product =
+      candidatesForItem.length > 0
+        ? candidatesForItem.reduce((cheapest, p) => (p.price < cheapest.price ? p : cheapest))
+        : null;
 
     return { name: item.name, category: item.category, product };
   });
+
+  if (budget === undefined || budget <= 0) {
+    const totalCost = matched.reduce((sum, m) => sum + (m.product?.price ?? 0), 0);
+    return { items: matched, totalCost };
+  }
+
+  // Cheapest-first, keep items while within budget.
+  const order = [...matched].sort((a, b) => (a.product?.price ?? 0) - (b.product?.price ?? 0));
+  const kept = new Set<number>();
+  let totalCost = 0;
+  for (const m of order) {
+    const price = m.product?.price ?? 0;
+    if (totalCost + price <= budget) {
+      totalCost += price;
+      kept.add(matched.indexOf(m));
+    }
+  }
+
+  const result = matched.map((m, i) => (kept.has(i) ? m : { ...m, product: null }));
+  return { items: result, totalCost };
 }
 
 /**

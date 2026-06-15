@@ -33,4 +33,13 @@ export interface Room {
   videoError?: string | null;
   sourceUrl?: string | null;
   videoLoading?: boolean;
+  budget?: number | null;
+  totalCost?: number;
+}
+
+export interface RoomVariant {
+  afterImage: string;
+  sourceUrl: string | null;
+  items: MatchedItem[];
+  totalCost: number;
 }
