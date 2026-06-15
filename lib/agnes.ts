@@ -86,12 +86,19 @@ async function fetchAsDataUrl(url: string): Promise<string> {
  * Falls back to text-to-image generation (no source room geometry) if the edit
  * endpoint rejects the request, so the pipeline still produces an "after" image.
  */
+export interface RestyleResult {
+  /** Data URL of the restyled image, for display in the browser. */
+  image: string;
+  /** Publicly accessible URL of the restyled image, if the API returned one (required for video generation). */
+  sourceUrl: string | null;
+}
+
 export async function restyleRoom(
   imageDataUrl: string,
   style: Style,
   roomType?: string,
   additions: string[] = []
-): Promise<string> {
+): Promise<RestyleResult> {
   const resolvedRoomType = roomType || (await detectRoomType(imageDataUrl));
   const prompt = buildRestylePrompt(style, resolvedRoomType, additions);
 
@@ -99,7 +106,7 @@ export async function restyleRoom(
   form.append("model", "agnes-image-2.0-flash");
   form.append("prompt", prompt);
   form.append("image", imageDataUrl);
-  form.append("response_format", "b64_json");
+  form.append("response_format", "url");
 
   const editRes = await fetch(`${BASE_URL}/images/edits`, {
     method: "POST",
@@ -110,8 +117,8 @@ export async function restyleRoom(
   if (editRes.ok) {
     const data = await editRes.json();
     const item = data?.data?.[0];
-    if (item?.b64_json) return `data:image/png;base64,${item.b64_json}`;
-    if (item?.url) return fetchAsDataUrl(item.url);
+    if (item?.url) return { image: await fetchAsDataUrl(item.url), sourceUrl: item.url };
+    if (item?.b64_json) return { image: `data:image/png;base64,${item.b64_json}`, sourceUrl: null };
   }
 
   // Fallback: text-to-image generation (loses original room geometry).
@@ -131,8 +138,8 @@ export async function restyleRoom(
 
   const genData = await genRes.json();
   const item = genData?.data?.[0];
-  if (item?.b64_json) return `data:image/png;base64,${item.b64_json}`;
-  if (item?.url) return fetchAsDataUrl(item.url);
+  if (item?.url) return { image: await fetchAsDataUrl(item.url), sourceUrl: item.url };
+  if (item?.b64_json) return { image: `data:image/png;base64,${item.b64_json}`, sourceUrl: null };
 
   throw new Error("No image returned from generation response");
 }
@@ -274,17 +281,18 @@ export async function generateListingCopy(
  * Returns a playable URL to the generated video.
  */
 export async function generateWalkthroughVideo(
-  imageDataUrl: string,
+  sourceImageUrl: string,
   style: Style
 ): Promise<string> {
-  const createRes = await fetch(`${BASE_URL}/video/generations`, {
+  const createRes = await fetch(`${BASE_URL}/videos`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       model: "agnes-video-v2.0",
       prompt: `Slow, smooth camera pan and gentle zoom across this ${style}-styled room, like a real-estate walkthrough. Keep motion subtle and steady.`,
-      image: imageDataUrl,
+      image: sourceImageUrl,
       num_frames: 121,
+      frame_rate: 24,
     }),
   });
 
@@ -293,28 +301,31 @@ export async function generateWalkthroughVideo(
   }
 
   const created = await createRes.json();
-  const taskId: string | undefined = created?.task_id ?? created?.id;
-  if (!taskId) throw new Error("No video task id returned");
+  const videoId: string | undefined = created?.video_id;
+  if (!videoId) throw new Error("No video_id returned");
+
+  const apiHost = BASE_URL.replace(/\/v1\/?$/, "");
 
   const maxAttempts = 60;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 5000));
 
-    const statusRes = await fetch(`${BASE_URL}/video/generations/${taskId}`, {
-      headers: authHeaders(),
-    });
+    const statusRes = await fetch(
+      `${apiHost}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=agnes-video-v2.0`,
+      { headers: authHeaders() }
+    );
     if (!statusRes.ok) continue;
 
-    const status = await statusRes.json();
-    const videoData = status?.data?.data ?? status?.data;
-    const state = videoData?.status;
+    const result = await statusRes.json();
+    const state = result?.status;
 
-    if (state === "completed" || state === "succeeded") {
-      const url = videoData?.url ?? videoData?.video_url ?? videoData?.output?.[0]?.url;
+    if (state === "completed") {
+      const url = result?.url ?? result?.video_url ?? result?.remixed_from_video_id;
       if (url) return url;
+      throw new Error("Video completed but no video URL was returned");
     }
     if (state === "failed") {
-      throw new Error(`Video generation failed: ${videoData?.error ?? "unknown error"}`);
+      throw new Error(`Video generation failed: ${result?.error?.message ?? result?.error ?? "unknown error"}`);
     }
   }
 

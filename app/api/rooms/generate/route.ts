@@ -24,7 +24,12 @@ export async function POST(req: NextRequest) {
       ? additions.filter((a): a is string => typeof a === "string" && a.trim().length > 0)
       : [];
 
-    const afterImage = await restyleRoom(image, style as Style, safeRoomType, safeAdditions);
+    const { image: afterImage, sourceUrl } = await restyleRoom(
+      image,
+      style as Style,
+      safeRoomType,
+      safeAdditions
+    );
     const rawItems = await extractItems(afterImage);
     const items = matchItemsToCatalog(rawItems, style as Style);
     const listingCopy = await generateListingCopy(style as Style, rawItems);
@@ -33,7 +38,8 @@ export async function POST(req: NextRequest) {
     let videoError: string | null = null;
     if (withVideo) {
       try {
-        videoUrl = await generateWalkthroughVideo(afterImage, style as Style);
+        if (!sourceUrl) throw new Error("No image URL available for video generation");
+        videoUrl = await generateWalkthroughVideo(sourceUrl, style as Style);
       } catch (err: any) {
         videoUrl = null;
         videoError = err?.message ?? "Video generation failed";
