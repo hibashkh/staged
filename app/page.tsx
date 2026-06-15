@@ -6,7 +6,6 @@ import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import ShopGrid from "@/components/ShopGrid";
 import VideoPlayer from "@/components/VideoPlayer";
 import Gallery from "@/components/Gallery";
-import VariantPicker from "@/components/VariantPicker";
 import { useRoomStore } from "@/store/useRoomStore";
 import type { Room, RoomVariant, Style } from "@/lib/types";
 import type { RoomType } from "@/lib/roomOptions";
@@ -26,12 +25,70 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingInput, setPendingInput] = useState<PendingInput | null>(null);
-  const [variants, setVariants] = useState<RoomVariant[] | null>(null);
 
-  const runGenerate = async (input: PendingInput) => {
+  const startVideo = (roomId: string, sourceUrl: string, style: Style) => {
+    fetch("/api/rooms/video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceUrl, style }),
+    })
+      .then((r) => r.json())
+      .then((videoData) => {
+        const changes = {
+          videoUrl: videoData.videoUrl ?? null,
+          videoError: videoData.videoError ?? null,
+          videoLoading: false,
+        };
+        updateRoom(roomId, changes);
+        setActive((current) => (current?.id === roomId ? { ...current, ...changes } : current));
+      })
+      .catch((err) => {
+        const changes = { videoUrl: null, videoError: err?.message ?? "Video generation failed", videoLoading: false };
+        updateRoom(roomId, changes);
+        setActive((current) => (current?.id === roomId ? { ...current, ...changes } : current));
+      });
+  };
+
+  const applyVariant = (
+    variant: RoomVariant,
+    input: PendingInput,
+    existingId?: string
+  ) => {
+    const room: Room = {
+      id: existingId ?? crypto.randomUUID(),
+      createdAt: Date.now(),
+      beforeImage: input.image,
+      style: input.style,
+      afterImage: variant.afterImage,
+      items: variant.items,
+      listingCopy: null,
+      videoUrl: null,
+      videoError: null,
+      sourceUrl: variant.sourceUrl,
+      videoLoading: input.withVideo,
+      budget: input.budget,
+      totalCost: variant.totalCost,
+    };
+
+    if (existingId) {
+      updateRoom(existingId, room);
+    } else {
+      addRoom(room);
+    }
+    setActive(room);
+
+    if (input.withVideo && variant.sourceUrl) {
+      startVideo(room.id, variant.sourceUrl, input.style);
+    } else if (input.withVideo) {
+      const changes = { videoUrl: null, videoError: "No image URL available for video generation", videoLoading: false };
+      updateRoom(room.id, changes);
+      setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
+    }
+  };
+
+  const runGenerate = async (input: PendingInput, existingId?: string) => {
     setLoading(true);
     setError(null);
-    setVariants(null);
     try {
       const res = await fetch("/api/rooms/generate", {
         method: "POST",
@@ -49,7 +106,7 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
       setPendingInput(input);
-      setVariants(data.variants);
+      applyVariant(data.variants[0], input, existingId);
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong");
     } finally {
@@ -68,57 +125,9 @@ export default function Home() {
     runGenerate({ image, style, withVideo, roomType, additions, budget });
   };
 
-  const handleChooseVariant = (variant: RoomVariant) => {
-    if (!pendingInput) return;
-    const { image, style, withVideo, budget } = pendingInput;
-
-    const room: Room = {
-      id: crypto.randomUUID(),
-      createdAt: Date.now(),
-      beforeImage: image,
-      style,
-      afterImage: variant.afterImage,
-      items: variant.items,
-      listingCopy: null,
-      videoUrl: null,
-      videoError: null,
-      sourceUrl: variant.sourceUrl,
-      videoLoading: withVideo,
-      budget,
-      totalCost: variant.totalCost,
-    };
-
-    addRoom(room);
-    setActive(room);
-    setVariants(null);
-    setPendingInput(null);
-
-    if (withVideo && variant.sourceUrl) {
-      fetch("/api/rooms/video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceUrl: variant.sourceUrl, style }),
-      })
-        .then((r) => r.json())
-        .then((videoData) => {
-          const changes = {
-            videoUrl: videoData.videoUrl ?? null,
-            videoError: videoData.videoError ?? null,
-            videoLoading: false,
-          };
-          updateRoom(room.id, changes);
-          setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
-        })
-        .catch((err) => {
-          const changes = { videoUrl: null, videoError: err?.message ?? "Video generation failed", videoLoading: false };
-          updateRoom(room.id, changes);
-          setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
-        });
-    } else if (withVideo) {
-      const changes = { videoUrl: null, videoError: "No image URL available for video generation", videoLoading: false };
-      updateRoom(room.id, changes);
-      setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
-    }
+  const handleRetry = () => {
+    if (!pendingInput || !active) return;
+    runGenerate(pendingInput, active.id);
   };
 
   return (
@@ -126,8 +135,8 @@ export default function Home() {
       <header>
         <h1 className="text-3xl font-bold">Staged</h1>
         <p className="text-neutral-500 mt-1">
-          Upload a photo of an empty or ugly room, pick a style and budget, and get
-          restyled options with a shoppable furniture list and a video walkthrough.
+          Upload a photo of an empty or ugly room, pick a style and budget, and get a
+          restyled photo with a shoppable furniture list and a video walkthrough.
         </p>
       </header>
 
@@ -142,7 +151,17 @@ export default function Home() {
           )}
 
           {active?.afterImage ? (
-            <BeforeAfterSlider beforeSrc={active.beforeImage} afterSrc={active.afterImage} />
+            <div className="space-y-3">
+              <BeforeAfterSlider beforeSrc={active.beforeImage} afterSrc={active.afterImage} />
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={loading}
+                className="w-full rounded-xl border border-neutral-300 py-2 text-sm font-medium hover:bg-neutral-100 disabled:opacity-40"
+              >
+                {loading ? "Generating…" : "Don't like it? Generate again"}
+              </button>
+            </div>
           ) : (
             <div className="rounded-xl border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-400 h-full flex items-center justify-center">
               Your before/after will appear here
@@ -150,17 +169,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {variants && pendingInput && (
-        <VariantPicker
-          beforeImage={pendingInput.image}
-          variants={variants}
-          budget={pendingInput.budget}
-          loading={loading}
-          onChoose={handleChooseVariant}
-          onRegenerate={() => runGenerate(pendingInput)}
-        />
-      )}
 
       {active && (
         <section className="space-y-6">

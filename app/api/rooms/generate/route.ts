@@ -6,7 +6,7 @@ import {
 } from "@/lib/agnes";
 import type { Style } from "@/lib/types";
 
-const VARIANT_COUNT = 3;
+const VARIANT_COUNT = 1;
 
 export async function POST(req: NextRequest) {
   try {
