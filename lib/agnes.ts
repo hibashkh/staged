@@ -100,17 +100,68 @@ export async function describeStyleFromImage(imageDataUrl: string): Promise<stri
   return text;
 }
 
-function buildRestylePrompt(stylePrompt: string, roomType: string, additions: string[] = []): string {
+/**
+ * Vision call that describes the room's shape/layout (walls, corners, windows, doors,
+ * open floor area) so the restyle prompt can place furniture appropriately for the
+ * actual geometry instead of generically.
+ */
+export async function detectRoomLayout(imageDataUrl: string): Promise<string> {
+  const res = await fetch(`${BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      model: "agnes-2.0-flash",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Describe this room's layout in 1-2 sentences, for an interior designer planning furniture placement: " +
+                "its approximate shape (e.g. rectangular, L-shaped, square), where the walls, corners, windows, doors, " +
+                "and any built-in fixtures are (e.g. left wall, far wall, right of the door), and where the main open " +
+                "floor area is. Be concise and specific about positions (left/right/center/back).",
+            },
+            {
+              type: "image_url",
+              image_url: { url: imageDataUrl },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) return "";
+
+  const data = await res.json();
+  const raw = data?.choices?.[0]?.message?.content ?? "";
+  return String(raw).trim();
+}
+
+function buildRestylePrompt(
+  stylePrompt: string,
+  roomType: string,
+  additions: string[] = [],
+  roomLayout?: string
+): string {
   const additionsText =
     additions.length > 0
       ? ` Also add the following to the room, styled to match: ${additions.join(", ")}.`
       : "";
 
+  const layoutText = roomLayout
+    ? ` Room layout: ${roomLayout} Position furniture and decor to fit this layout naturally — ` +
+      `place larger pieces against walls or in corners, keep walkways and the main open floor area clear, ` +
+      `and align items with the room's actual shape and doorways/windows.`
+    : "";
+
   return (
     `This photo shows a ${roomType}. ${stylePrompt} ` +
     `This must remain a ${roomType} — keep all built-in fixtures, appliances, plumbing, and the room's function exactly as they are ` +
     `(do not add furniture or fixtures belonging to a different room type, e.g. do not add a bed, sofa, or dining table to a ${roomType} unless it normally has one).` +
-    `${additionsText} ` +
+    `${additionsText}${layoutText} ` +
     `Keep the room's exact layout, walls, windows, doors, and camera angle unchanged. Only restyle finishes, furniture, decor, and lighting.`
   );
 }
@@ -141,16 +192,17 @@ export async function restyleRoom(
   additions: string[] = [],
   inspirationImageDataUrl?: string
 ): Promise<RestyleResult> {
-  const resolvedRoomType = roomType || (await detectRoomType(imageDataUrl));
-
-  const stylePrompt =
+  const [resolvedRoomType, roomLayout, stylePrompt] = await Promise.all([
+    roomType ? Promise.resolve(roomType) : detectRoomType(imageDataUrl),
+    detectRoomLayout(imageDataUrl),
     style === "inspiration"
       ? inspirationImageDataUrl
-        ? await describeStyleFromImage(inspirationImageDataUrl)
-        : "Restyle this room with a fresh, cohesive, modern interior design."
-      : STYLE_PROMPTS[style];
+        ? describeStyleFromImage(inspirationImageDataUrl)
+        : Promise.resolve("Restyle this room with a fresh, cohesive, modern interior design.")
+      : Promise.resolve(STYLE_PROMPTS[style]),
+  ]);
 
-  const prompt = buildRestylePrompt(stylePrompt, resolvedRoomType, additions);
+  const prompt = buildRestylePrompt(stylePrompt, resolvedRoomType, additions, roomLayout);
 
   const editRes = await fetch(`${BASE_URL}/images/generations`, {
     method: "POST",
@@ -273,26 +325,38 @@ export function matchItemsToCatalog(
           .slice(0, 4)
           .map((product) => ({ name: product.name, category: product.category }));
 
+  // All distinct product categories present in the catalog, used to map a freeform
+  // detected item (name + maybe-empty/odd category) onto a real catalog category.
+  const catalogCategories = Array.from(new Set(catalog.map((p) => p.category)));
+
+  const usedUrls = new Set<string>();
+
   const matched = candidates.map((item) => {
     const category = item.category.toLowerCase().trim();
     const name = item.name.toLowerCase();
 
-    const candidatesForItem = [
-      ...catalog.filter((p) => p.style === style && p.category === category),
-      ...catalog.filter((p) => p.category === category),
-      ...catalog.filter(
-        (p) =>
-          p.style === style &&
-          (name.includes(p.category) || p.category.includes(category))
-      ),
-      ...catalog.filter((p) => p.style === style),
-      ...catalog,
-    ];
+    // Find the catalog category (if any) that best describes this item, by checking
+    // whether the item's category/name mentions it (or vice versa for multi-word categories).
+    const matchedCategory = catalogCategories.find(
+      (c) => category === c || category.includes(c) || c.includes(category) || name.includes(c)
+    );
 
-    const product =
-      candidatesForItem.length > 0
-        ? candidatesForItem.reduce((cheapest, p) => (p.price < cheapest.price ? p : cheapest))
-        : null;
+    const score = (p: Product): number => {
+      let s = 0;
+      if (matchedCategory && p.category === matchedCategory) s += 4;
+      if (p.style === style) s += 2;
+      if (usedUrls.has(p.url)) s -= 10; // strongly prefer not reusing the same product
+      return s;
+    };
+
+    const ranked = [...catalog].sort((a, b) => {
+      const diff = score(b) - score(a);
+      if (diff !== 0) return diff;
+      return a.price - b.price;
+    });
+
+    const product = ranked.length > 0 ? ranked[0] : null;
+    if (product) usedUrls.add(product.url);
 
     return { name: item.name, category: item.category, product };
   });
