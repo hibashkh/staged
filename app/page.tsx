@@ -4,7 +4,6 @@ import { useState } from "react";
 import UploadForm from "@/components/UploadForm";
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import ShopGrid from "@/components/ShopGrid";
-import ListingCopy from "@/components/ListingCopy";
 import VideoPlayer from "@/components/VideoPlayer";
 import Gallery from "@/components/Gallery";
 import { useRoomStore } from "@/store/useRoomStore";
@@ -118,8 +117,6 @@ export default function Home() {
 
       {active && (
         <section className="space-y-6">
-          {active.listingCopy && <ListingCopy copy={active.listingCopy} />}
-
           <div>
             <h2 className="font-semibold mb-3">Shop this look</h2>
             <ShopGrid items={active.items} />
