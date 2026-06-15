@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     if (typeof sourceUrl !== "string" || !sourceUrl) {
       return NextResponse.json({ error: "Missing 'sourceUrl'" }, { status: 400 });
     }
-    if (!["scandi", "muji", "luxe", "industrial"].includes(style)) {
+    if (!["scandi", "muji", "luxe", "industrial", "inspiration"].includes(style)) {
       return NextResponse.json({ error: "Invalid 'style'" }, { status: 400 });
     }
 
