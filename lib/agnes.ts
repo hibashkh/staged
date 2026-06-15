@@ -213,6 +213,13 @@ export function matchItemsToCatalog(
 ): MatchedItem[] {
   const catalog = products as Product[];
 
+  if (items.length === 0) {
+    return catalog
+      .filter((p) => p.style === style)
+      .slice(0, 4)
+      .map((product) => ({ name: product.name, category: product.category, product }));
+  }
+
   return items.map((item) => {
     const category = item.category.toLowerCase().trim();
     const name = item.name.toLowerCase();
@@ -225,6 +232,7 @@ export function matchItemsToCatalog(
           p.style === style &&
           (name.includes(p.category) || p.category.includes(category))
       ) ??
+      catalog.find((p) => p.style === style) ??
       null;
 
     return { name: item.name, category: item.category, product };
