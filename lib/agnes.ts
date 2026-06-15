@@ -82,9 +82,9 @@ async function fetchAsDataUrl(url: string): Promise<string> {
 }
 
 /**
- * Image-to-image restyle via /v1/images/edits. `imageDataUrl` is a base64 data URL.
- * Falls back to text-to-image generation (no source room geometry) if the edit
- * endpoint rejects the request, so the pipeline still produces an "after" image.
+ * Image-to-image restyle via /v1/images/generations (agnes-image-2.1-flash).
+ * Falls back to text-to-image generation (no source room geometry) if the
+ * image-to-image request fails, so the pipeline still produces an "after" image.
  */
 export interface RestyleResult {
   /** Data URL of the restyled image, for display in the browser. */
@@ -102,16 +102,18 @@ export async function restyleRoom(
   const resolvedRoomType = roomType || (await detectRoomType(imageDataUrl));
   const prompt = buildRestylePrompt(style, resolvedRoomType, additions);
 
-  const form = new FormData();
-  form.append("model", "agnes-image-2.0-flash");
-  form.append("prompt", prompt);
-  form.append("image", imageDataUrl);
-  form.append("response_format", "url");
-
-  const editRes = await fetch(`${BASE_URL}/images/edits`, {
+  const editRes = await fetch(`${BASE_URL}/images/generations`, {
     method: "POST",
-    headers: authHeaders(),
-    body: form,
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      model: "agnes-image-2.1-flash",
+      prompt,
+      size: "1024x768",
+      extra_body: {
+        image: [imageDataUrl],
+        response_format: "url",
+      },
+    }),
   });
 
   if (editRes.ok) {
@@ -126,9 +128,12 @@ export async function restyleRoom(
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
-      model: "agnes-image-2.0-flash",
+      model: "agnes-image-2.1-flash",
       prompt: `${prompt} A photo of an interior room.`,
-      size: "1024x1024",
+      size: "1024x768",
+      extra_body: {
+        response_format: "url",
+      },
     }),
   });
 
@@ -291,7 +296,7 @@ export async function generateWalkthroughVideo(
       model: "agnes-video-v2.0",
       prompt: `Slow, smooth camera pan and gentle zoom across this ${style}-styled room, like a real-estate walkthrough. Keep motion subtle and steady.`,
       image: sourceImageUrl,
-      num_frames: 121,
+      num_frames: 441,
       frame_rate: 24,
     }),
   });
