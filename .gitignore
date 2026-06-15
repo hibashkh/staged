@@ -13,5 +13,10 @@ __pycache__/
 # VSCode
 .vscode/
 
+# Env
+.env
+.env.local
+.env*.local
+
 # OneDrive
 *.lnk

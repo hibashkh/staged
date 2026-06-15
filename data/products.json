@@ -1,0 +1,25 @@
+[
+  { "name": "Rattan Lounge Armchair", "category": "armchair", "style": "scandi", "retailer": "IKEA", "price": 249, "url": "https://www.ikea.com/sg/en/p/rattan-lounge-armchair", "thumbnail": "https://placehold.co/200x200?text=Rattan+Armchair" },
+  { "name": "Pale Oak Coffee Table", "category": "coffee table", "style": "scandi", "retailer": "IKEA", "price": 129, "url": "https://www.ikea.com/sg/en/p/pale-oak-coffee-table", "thumbnail": "https://placehold.co/200x200?text=Oak+Coffee+Table" },
+  { "name": "Linen Throw Cushion Set", "category": "cushion", "style": "scandi", "retailer": "Taobao", "price": 35, "url": "https://www.taobao.com/item/linen-throw-cushion-set", "thumbnail": "https://placehold.co/200x200?text=Linen+Cushions" },
+  { "name": "Cream Boucle Sofa", "category": "sofa", "style": "scandi", "retailer": "Castlery", "price": 1399, "url": "https://www.castlery.com/sg/products/cream-boucle-sofa", "thumbnail": "https://placehold.co/200x200?text=Boucle+Sofa" },
+  { "name": "Wool Area Rug, Natural", "category": "rug", "style": "scandi", "retailer": "IKEA", "price": 199, "url": "https://www.ikea.com/sg/en/p/wool-area-rug-natural", "thumbnail": "https://placehold.co/200x200?text=Wool+Rug" },
+
+  { "name": "Low Platform Bed Frame, Oak", "category": "bed frame", "style": "muji", "retailer": "Muji", "price": 899, "url": "https://www.muji.com/sg/products/low-platform-bed-oak", "thumbnail": "https://placehold.co/200x200?text=Platform+Bed" },
+  { "name": "Stackable Storage Shelf, Pine", "category": "shelf", "style": "muji", "retailer": "Muji", "price": 159, "url": "https://www.muji.com/sg/products/stackable-storage-shelf-pine", "thumbnail": "https://placehold.co/200x200?text=Pine+Shelf" },
+  { "name": "Paper Cord Pendant Lamp", "category": "pendant lamp", "style": "muji", "retailer": "Muji", "price": 89, "url": "https://www.muji.com/sg/products/paper-cord-pendant-lamp", "thumbnail": "https://placehold.co/200x200?text=Pendant+Lamp" },
+  { "name": "Cotton Futon Mattress", "category": "mattress", "style": "muji", "retailer": "Muji", "price": 249, "url": "https://www.muji.com/sg/products/cotton-futon-mattress", "thumbnail": "https://placehold.co/200x200?text=Futon+Mattress" },
+  { "name": "Unbleached Cotton Curtains", "category": "curtains", "style": "muji", "retailer": "Taobao", "price": 45, "url": "https://www.taobao.com/item/unbleached-cotton-curtains", "thumbnail": "https://placehold.co/200x200?text=Cotton+Curtains" },
+
+  { "name": "Marble-Top Side Table", "category": "side table", "style": "luxe", "retailer": "Castlery", "price": 459, "url": "https://www.castlery.com/sg/products/marble-top-side-table", "thumbnail": "https://placehold.co/200x200?text=Marble+Side+Table" },
+  { "name": "Velvet Tufted Sofa, Emerald", "category": "sofa", "style": "luxe", "retailer": "Castlery", "price": 2199, "url": "https://www.castlery.com/sg/products/velvet-tufted-sofa-emerald", "thumbnail": "https://placehold.co/200x200?text=Velvet+Sofa" },
+  { "name": "Brass Arc Floor Lamp", "category": "floor lamp", "style": "luxe", "retailer": "Castlery", "price": 329, "url": "https://www.castlery.com/sg/products/brass-arc-floor-lamp", "thumbnail": "https://placehold.co/200x200?text=Brass+Floor+Lamp" },
+  { "name": "Gold-Trim Wall Mirror", "category": "mirror", "style": "luxe", "retailer": "Taobao", "price": 179, "url": "https://www.taobao.com/item/gold-trim-wall-mirror", "thumbnail": "https://placehold.co/200x200?text=Gold+Mirror" },
+  { "name": "Silk-Blend Area Rug, Ivory", "category": "rug", "style": "luxe", "retailer": "Castlery", "price": 549, "url": "https://www.castlery.com/sg/products/silk-blend-area-rug-ivory", "thumbnail": "https://placehold.co/200x200?text=Silk+Rug" },
+
+  { "name": "Black Metal Bookshelf", "category": "shelf", "style": "industrial", "retailer": "Taobao", "price": 219, "url": "https://www.taobao.com/item/black-metal-bookshelf", "thumbnail": "https://placehold.co/200x200?text=Metal+Bookshelf" },
+  { "name": "Reclaimed Wood Dining Table", "category": "dining table", "style": "industrial", "retailer": "Castlery", "price": 1099, "url": "https://www.castlery.com/sg/products/reclaimed-wood-dining-table", "thumbnail": "https://placehold.co/200x200?text=Wood+Dining+Table" },
+  { "name": "Edison Bulb Cage Pendant", "category": "pendant lamp", "style": "industrial", "retailer": "IKEA", "price": 49, "url": "https://www.ikea.com/sg/en/p/edison-bulb-cage-pendant", "thumbnail": "https://placehold.co/200x200?text=Cage+Pendant" },
+  { "name": "Leather & Iron Bar Stool", "category": "stool", "style": "industrial", "retailer": "Taobao", "price": 89, "url": "https://www.taobao.com/item/leather-iron-bar-stool", "thumbnail": "https://placehold.co/200x200?text=Bar+Stool" },
+  { "name": "Distressed Leather Armchair", "category": "armchair", "style": "industrial", "retailer": "Castlery", "price": 1299, "url": "https://www.castlery.com/sg/products/distressed-leather-armchair", "thumbnail": "https://placehold.co/200x200?text=Leather+Armchair" }
+]
