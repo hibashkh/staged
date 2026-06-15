@@ -45,6 +45,7 @@ export default function Home() {
         items: data.items,
         listingCopy: data.listingCopy,
         videoUrl: data.videoUrl,
+        videoError: data.videoError ?? null,
       };
 
       addRoom(room);
@@ -97,7 +98,7 @@ export default function Home() {
 
           <div>
             <h2 className="font-semibold mb-3">Video walkthrough</h2>
-            <VideoPlayer src={active.videoUrl} />
+            <VideoPlayer src={active.videoUrl} error={active.videoError} />
           </div>
         </section>
       )}

@@ -30,15 +30,18 @@ export async function POST(req: NextRequest) {
     const listingCopy = await generateListingCopy(style as Style, rawItems);
 
     let videoUrl: string | null = null;
+    let videoError: string | null = null;
     if (withVideo) {
       try {
         videoUrl = await generateWalkthroughVideo(afterImage, style as Style);
-      } catch {
+      } catch (err: any) {
         videoUrl = null;
+        videoError = err?.message ?? "Video generation failed";
+        console.error("video walkthrough generation failed:", err);
       }
     }
 
-    return NextResponse.json({ afterImage, items, listingCopy, videoUrl });
+    return NextResponse.json({ afterImage, items, listingCopy, videoUrl, videoError });
   } catch (err: any) {
     console.error("generate room failed:", err);
     return NextResponse.json(

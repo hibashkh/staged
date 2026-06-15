@@ -30,4 +30,5 @@ export interface Room {
   items: MatchedItem[];
   listingCopy: ListingCopy | null;
   videoUrl: string | null;
+  videoError?: string | null;
 }
