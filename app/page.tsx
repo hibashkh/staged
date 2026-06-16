@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import UploadForm from "@/components/UploadForm";
+import dynamic from "next/dynamic";
+const UploadForm = dynamic(() => import("@/components/UploadForm"), { ssr: false });
 import BeforeAfterSlider from "@/components/BeforeAfterSlider";
 import ShopGrid from "@/components/ShopGrid";
 import ListingCopy from "@/components/ListingCopy";
@@ -22,7 +23,8 @@ export default function Home() {
     style: Style,
     withVideo: boolean,
     roomType: RoomType,
-    additions: string[]
+    additions: string[],
+    inspoImage: string | null
   ) => {
     setLoading(true);
     setError(null);
@@ -30,7 +32,7 @@ export default function Home() {
       const res = await fetch("/api/rooms/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image, style, withVideo, roomType, additions }),
+        body: JSON.stringify({ image, style, withVideo, roomType, additions, inspoImage }),
       });
 
       const data = await res.json();
@@ -42,6 +44,7 @@ export default function Home() {
         beforeImage: image,
         style,
         afterImage: data.afterImage,
+        inspoImage: inspoImage ?? null,
         items: data.items,
         listingCopy: data.listingCopy,
         videoUrl: null,

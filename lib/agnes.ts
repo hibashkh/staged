@@ -1,10 +1,16 @@
 import products from "@/data/products.json";
 import type { ListingCopy, MatchedItem, Product, Style } from "./types";
 
-const BASE_URL = process.env.AGNES_BASE_URL ?? "https://apihub.agnes-ai.com/v1";
-const API_KEY = process.env.AGNES_API_KEY;
+const BASE_URL = process.env.AGNES_BASE_URL?.trim() || "https://apihub.agnes-ai.com/v1";
+const API_KEY = process.env.AGNES_API_KEY?.trim();
 
 function authHeaders(extra?: Record<string, string>) {
+  if (!API_KEY) {
+    throw new Error(
+      "AGNES_API_KEY is not configured. Add your key to .env.local and restart the dev server."
+    );
+  }
+
   return {
     Authorization: `Bearer ${API_KEY}`,
     ...extra,
@@ -97,10 +103,20 @@ export async function restyleRoom(
   imageDataUrl: string,
   style: Style,
   roomType?: string,
-  additions: string[] = []
+  additions: string[] = [],
+  inspoImageDataUrl?: string | null
 ): Promise<RestyleResult> {
   const resolvedRoomType = roomType || (await detectRoomType(imageDataUrl));
-  const prompt = buildRestylePrompt(style, resolvedRoomType, additions);
+
+  const prompt = inspoImageDataUrl
+    ? `This photo shows a ${resolvedRoomType}. ` +
+      `Use the second image as a design inspiration — draw from its overall mood, color palette, materials, and aesthetic feel to restyle this ${resolvedRoomType}. ` +
+      `Do not copy the inspiration layout or furniture placement exactly; instead interpret the vibe and adapt it naturally to fit this specific room. ` +
+      `Keep the room's existing layout, walls, windows, doors, and camera angle unchanged. Only restyle finishes, furniture, decor, textures, and lighting.` +
+      (additions.length > 0 ? ` Also incorporate: ${additions.join(", ")}.` : "")
+    : buildRestylePrompt(style, resolvedRoomType, additions);
+
+  const images = inspoImageDataUrl ? [imageDataUrl, inspoImageDataUrl] : [imageDataUrl];
 
   const editRes = await fetch(`${BASE_URL}/images/generations`, {
     method: "POST",
@@ -108,9 +124,9 @@ export async function restyleRoom(
     body: JSON.stringify({
       model: "agnes-image-2.1-flash",
       prompt,
-      size: "1024x768",
+      size: "768x576",
       extra_body: {
-        image: [imageDataUrl],
+        image: images,
         response_format: "url",
       },
     }),
@@ -130,7 +146,7 @@ export async function restyleRoom(
     body: JSON.stringify({
       model: "agnes-image-2.1-flash",
       prompt: `${prompt} A photo of an interior room.`,
-      size: "1024x768",
+      size: "768x576",
       extra_body: {
         response_format: "url",
       },
@@ -304,7 +320,7 @@ export async function generateWalkthroughVideo(
       model: "agnes-video-v2.0",
       prompt: `Slow, smooth camera pan and gentle zoom across this ${style}-styled room, like a real-estate walkthrough. Keep motion subtle and steady.`,
       image: sourceImageUrl,
-      num_frames: 121,
+      num_frames: 73,
       frame_rate: 24,
     }),
   });
@@ -319,9 +335,9 @@ export async function generateWalkthroughVideo(
 
   const apiHost = BASE_URL.replace(/\/v1\/?$/, "");
 
-  const maxAttempts = 60;
+  const maxAttempts = 30;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await new Promise((r) => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, attempt < 10 ? 2000 : 4000));
 
     const statusRes = await fetch(
       `${apiHost}/agnesapi?video_id=${encodeURIComponent(videoId)}&model_name=agnes-video-v2.0`,

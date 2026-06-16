@@ -15,26 +15,34 @@ export default function UploadForm({
     style: Style,
     withVideo: boolean,
     roomType: RoomType,
-    additions: string[]
+    additions: string[],
+    inspoImage: string | null
   ) => void;
   loading: boolean;
 }) {
   const [preview, setPreview] = useState<string | null>(null);
+  const [inspoPreview, setInspoPreview] = useState<string | null>(null);
+  const [useInspo, setUseInspo] = useState(false);
   const [style, setStyle] = useState<Style>("scandi");
   const [withVideo, setWithVideo] = useState(false);
   const [roomType, setRoomType] = useState<RoomType>("living room");
   const [selectedFurniture, setSelectedFurniture] = useState<string[]>([]);
   const [otherFurniture, setOtherFurniture] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inspoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (file: File) => {
+  const handleFile = (file: File, isInspo = false) => {
     const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
+    reader.onload = () => {
+      if (isInspo) setInspoPreview(reader.result as string);
+      else setPreview(reader.result as string);
+    };
     reader.readAsDataURL(file);
   };
 
   return (
     <div className="space-y-4">
+      {/* Room photo upload */}
       <div
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
@@ -74,7 +82,55 @@ export default function UploadForm({
         onOtherFurnitureChange={setOtherFurniture}
       />
 
-      <StylePicker value={style} onChange={setStyle} />
+      {/* Inspo toggle */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            checked={useInspo}
+            onChange={(e) => {
+              setUseInspo(e.target.checked);
+              if (!e.target.checked) setInspoPreview(null);
+            }}
+          />
+          Use an inspiration image (AI will copy the look)
+        </label>
+
+        {useInspo && (
+          <div
+            onClick={() => inspoInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleFile(file, true);
+            }}
+            className="rounded-xl border-2 border-dashed border-amber-300 p-4 text-center cursor-pointer hover:border-amber-400 transition bg-amber-50"
+          >
+            {inspoPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={inspoPreview} alt="Inspiration" className="max-h-40 mx-auto rounded-lg" />
+            ) : (
+              <p className="text-sm text-amber-600">
+                Click or drag your inspiration / mood board photo here
+              </p>
+            )}
+            <input
+              ref={inspoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file, true);
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Style picker — hidden when inspo mode is active */}
+      {!useInspo && <StylePicker value={style} onChange={setStyle} />}
 
       <label className="flex items-center gap-2 text-sm text-neutral-600">
         <input
@@ -82,19 +138,20 @@ export default function UploadForm({
           checked={withVideo}
           onChange={(e) => setWithVideo(e.target.checked)}
         />
-        Also generate a video walkthrough (slower)
+        Also generate a video walkthrough
       </label>
 
       <button
         type="button"
-        disabled={!preview || loading}
+        disabled={!preview || (useInspo && !inspoPreview) || loading}
         onClick={() => {
           if (!preview) return;
+          if (useInspo && !inspoPreview) return;
           const additions = [
             ...selectedFurniture,
             ...(otherFurniture.trim() ? [otherFurniture.trim()] : []),
           ];
-          onGenerate(preview, style, withVideo, roomType, additions);
+          onGenerate(preview, style, withVideo, roomType, additions, useInspo ? inspoPreview : null);
         }}
         className="w-full rounded-xl bg-neutral-900 text-white py-3 font-medium disabled:opacity-40"
       >

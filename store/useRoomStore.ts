@@ -14,7 +14,7 @@ export const useRoomStore = create<RoomStore>()(
     (set) => ({
       rooms: [],
       addRoom: (room) =>
-        set((state) => ({ rooms: [room, ...state.rooms] })),
+        set((state) => ({ rooms: [room, ...state.rooms].slice(0, 3) })),
       removeRoom: (id) =>
         set((state) => ({ rooms: state.rooms.filter((r) => r.id !== id) })),
       updateRoom: (id, changes) =>
@@ -22,6 +22,11 @@ export const useRoomStore = create<RoomStore>()(
           rooms: state.rooms.map((r) => (r.id === id ? { ...r, ...changes } : r)),
         })),
     }),
-    { name: "staged-rooms" }
+    {
+      name: "staged-rooms",
+      partialize: (state) => ({
+        rooms: state.rooms.map(({ beforeImage: _, ...rest }) => rest),
+      }),
+    }
   )
 );

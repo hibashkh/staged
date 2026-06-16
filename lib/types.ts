@@ -26,6 +26,7 @@ export interface Room {
   createdAt: number;
   beforeImage: string;
   style: Style;
+  inspoImage?: string | null;
   afterImage: string | null;
   items: MatchedItem[];
   listingCopy: ListingCopy | null;
