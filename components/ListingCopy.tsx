@@ -13,15 +13,15 @@ export default function ListingCopy({ copy }: { copy: ListingCopyType }) {
   };
 
   return (
-    <div className="rounded-xl border border-neutral-200 p-4 bg-white">
+    <div className="rounded-xl border border-stone-200 p-4 bg-clay-50/50">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-semibold text-lg">{copy.title}</h3>
-          <p className="text-sm text-neutral-600 mt-1">{copy.description}</p>
+          <h3 className="font-serif font-semibold text-lg text-stone-900">{copy.title}</h3>
+          <p className="text-sm text-stone-600 mt-1">{copy.description}</p>
         </div>
         <button
           onClick={handleCopy}
-          className="text-xs px-3 py-1.5 rounded-lg border border-neutral-300 hover:bg-neutral-100 whitespace-nowrap"
+          className="text-xs px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-white whitespace-nowrap"
         >
           {copied ? "Copied!" : "Copy"}
         </button>

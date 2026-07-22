@@ -30,7 +30,7 @@ export default function RoomDetailsForm({
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-stone-700 mb-1">
           What type of room is this?
         </label>
         <select
@@ -39,7 +39,7 @@ export default function RoomDetailsForm({
             onRoomTypeChange(e.target.value as RoomType);
             onSelectedFurnitureChange([]);
           }}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-clay-500"
         >
           {ROOM_TYPES.map((type) => (
             <option key={type} value={type}>
@@ -50,7 +50,7 @@ export default function RoomDetailsForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-stone-700 mb-1">
           Furniture/decor to add (optional)
         </label>
         <div className="flex flex-wrap gap-2">
@@ -61,8 +61,8 @@ export default function RoomDetailsForm({
               onClick={() => toggleFurniture(item)}
               className={`rounded-full border px-3 py-1 text-xs transition ${
                 selectedFurniture.includes(item)
-                  ? "bg-neutral-900 text-white border-neutral-900"
-                  : "border-neutral-300 text-neutral-600 hover:border-neutral-400"
+                  ? "bg-clay-600 text-white border-clay-600"
+                  : "border-stone-300 text-stone-600 hover:border-clay-400 hover:text-clay-700"
               }`}
             >
               {item}
@@ -72,7 +72,7 @@ export default function RoomDetailsForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-stone-700 mb-1">
           Anything else? (optional)
         </label>
         <input
@@ -80,7 +80,7 @@ export default function RoomDetailsForm({
           value={otherFurniture}
           onChange={(e) => onOtherFurnitureChange(e.target.value)}
           placeholder="e.g. a reading nook, indoor plants, a piano…"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay-500"
         />
       </div>
     </div>

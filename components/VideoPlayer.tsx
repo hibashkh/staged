@@ -9,9 +9,12 @@ export default function VideoPlayer({
 }) {
   if (!src) {
     return (
-      <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-400">
+      <div className="rounded-xl border border-dashed border-stone-300 p-6 text-center text-sm text-stone-400 bg-white">
         {loading ? (
-          "Generating video walkthrough… this can take a couple of minutes."
+          <div className="flex flex-col items-center gap-3">
+            <span className="h-6 w-6 rounded-full border-2 border-clay-300 border-t-clay-600 animate-spin" />
+            <span>Generating video walkthrough… this can take a couple of minutes.</span>
+          </div>
         ) : error ? (
           <>
             <p className="text-red-500">Video generation failed: {error}</p>
@@ -31,7 +34,7 @@ export default function VideoPlayer({
       loop
       muted
       playsInline
-      className="w-full rounded-xl border border-neutral-200 aspect-video object-cover"
+      className="w-full rounded-xl border border-stone-200 shadow-sm aspect-video object-cover"
     />
   );
 }

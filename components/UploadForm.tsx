@@ -51,10 +51,20 @@ export default function UploadForm({
     }
   };
 
-  const handleCreateProject = (name: string) => {
-    const id = crypto.randomUUID();
-    addProject({ id, name, createdAt: Date.now() });
-    setProjectId(id);
+  const handleCreateProject = async (name: string) => {
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to create project");
+      addProject(data.project);
+      setProjectId(data.project.id);
+    } catch (err) {
+      console.error("create project failed:", err);
+    }
   };
 
   const handleFile = (file: File) => {
@@ -70,7 +80,7 @@ export default function UploadForm({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
       <div
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
@@ -79,15 +89,20 @@ export default function UploadForm({
           const file = e.dataTransfer.files?.[0];
           if (file) handleFile(file);
         }}
-        className="rounded-xl border-2 border-dashed border-neutral-300 p-6 text-center cursor-pointer hover:border-neutral-400 transition"
+        className="rounded-xl border-2 border-dashed border-stone-300 p-6 text-center cursor-pointer hover:border-clay-400 hover:bg-clay-50/40 transition"
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview} alt="Room preview" className="max-h-64 mx-auto rounded-lg" />
         ) : (
-          <p className="text-sm text-neutral-500">
-            Click or drag a photo of an empty / ugly room here
-          </p>
+          <div className="flex flex-col items-center gap-2 py-4 text-stone-400">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-8 w-8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5M16 8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <p className="text-sm">
+              Click or drag a photo of an empty / ugly room here
+            </p>
+          </div>
         )}
         <input
           ref={fileInputRef}
@@ -128,13 +143,13 @@ export default function UploadForm({
             const file = e.dataTransfer.files?.[0];
             if (file) handleInspirationFile(file);
           }}
-          className="rounded-xl border-2 border-dashed border-neutral-300 p-4 text-center cursor-pointer hover:border-neutral-400 transition"
+          className="rounded-xl border-2 border-dashed border-stone-300 p-4 text-center cursor-pointer hover:border-clay-400 hover:bg-clay-50/40 transition"
         >
           {inspirationPreview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={inspirationPreview} alt="Inspiration preview" className="max-h-40 mx-auto rounded-lg" />
           ) : (
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-stone-500">
               Click or drag an inspiration photo here — we'll match its style
             </p>
           )}
@@ -152,7 +167,7 @@ export default function UploadForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-stone-700 mb-1">
           Furniture budget (optional)
         </label>
         <input
@@ -162,18 +177,19 @@ export default function UploadForm({
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
           placeholder="e.g. 1500"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay-500"
         />
-        <p className="text-xs text-neutral-400 mt-1">
+        <p className="text-xs text-stone-400 mt-1">
           We'll pick matching furniture that fits within this total.
         </p>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-neutral-600">
+      <label className="flex items-center gap-2 text-sm text-stone-600">
         <input
           type="checkbox"
           checked={withVideo}
           onChange={(e) => setWithVideo(e.target.checked)}
+          className="accent-clay-600"
         />
         Also generate a video walkthrough (slower)
       </label>
@@ -199,7 +215,7 @@ export default function UploadForm({
             style === "inspiration" ? inspirationPreview : null
           );
         }}
-        className="w-full rounded-xl bg-neutral-900 text-white py-3 font-medium disabled:opacity-40"
+        className="w-full rounded-xl bg-clay-600 text-white py-3 font-medium hover:bg-clay-700 transition disabled:opacity-40"
       >
         {loading ? "Staging your room…" : "Stage this room"}
       </button>

@@ -23,7 +23,7 @@ export default function BeforeAfterSlider({
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video overflow-hidden rounded-xl border border-neutral-200 select-none"
+      className="relative w-full aspect-video overflow-hidden rounded-xl border border-stone-200 shadow-sm select-none"
       onMouseMove={(e) => e.buttons === 1 && handleMove(e.clientX)}
       onTouchMove={(e) => handleMove(e.touches[0].clientX)}
     >
@@ -41,12 +41,12 @@ export default function BeforeAfterSlider({
         style={{ left: `${percent}%` }}
         onMouseDown={(e) => handleMove(e.clientX)}
       >
-        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 left-1/2 w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-xs font-bold">
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 left-1/2 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-clay-600 text-sm font-bold ring-1 ring-stone-200">
           ↔
         </div>
       </div>
-      <div className="absolute top-2 left-2 text-xs bg-black/60 text-white px-2 py-0.5 rounded">Before</div>
-      <div className="absolute top-2 right-2 text-xs bg-black/60 text-white px-2 py-0.5 rounded">After</div>
+      <div className="absolute top-2 left-2 text-xs font-medium bg-stone-900/70 text-white px-2 py-0.5 rounded-full">Before</div>
+      <div className="absolute top-2 right-2 text-xs font-medium bg-clay-600/90 text-white px-2 py-0.5 rounded-full">After</div>
     </div>
   );
 }
