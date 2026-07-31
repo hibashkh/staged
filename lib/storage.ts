@@ -1,4 +1,4 @@
-import { mkdir, writeFile, unlink } from "fs/promises";
+import { mkdir, writeFile, unlink, rm } from "fs/promises";
 import path from "path";
 
 const UPLOADS_ROOT = path.join(process.cwd(), "public", "uploads");
@@ -47,4 +47,10 @@ export async function deleteRoomFiles(userId: string, roomId: string) {
       }
     }
   }
+}
+
+/** Deletes every uploaded/generated file for a user (their whole uploads directory) — best-effort. */
+export async function deleteUserFiles(userId: string) {
+  const dir = path.join(UPLOADS_ROOT, userId);
+  await rm(dir, { recursive: true, force: true });
 }
