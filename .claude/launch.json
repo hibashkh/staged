@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "invoice-form-preview",
+      "runtimeExecutable": "C:\\Python314\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8791", "--directory", "C:\\Users\\hibas\\Desktop\\Madihamantra-Invoice"],
+      "port": 8791
     }
   ]
 }

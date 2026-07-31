@@ -1,8 +1,8 @@
-// File: C:\Users\hibas\OneDrive\Desktop\decathlon\app\api\rooms\generate\route.ts
-import * as entry from '../../../../../../app/api/rooms/generate/route.js'
+// File: C:\Users\hibas\OneDrive\Desktop\staged\app\api\auth\login\route.ts
+import * as entry from '../../../../../../app/api/auth/login/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../app/api/rooms/generate/route.js')
+type TEntry = typeof import('../../../../../../app/api/auth/login/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{
