@@ -1,148 +1,54 @@
 "use client";
 
-import { useState } from "react";
-import dynamic from "next/dynamic";
-const UploadForm = dynamic(() => import("@/components/UploadForm"), { ssr: false });
-import BeforeAfterSlider from "@/components/BeforeAfterSlider";
-import ShopGrid from "@/components/ShopGrid";
-import ListingCopy from "@/components/ListingCopy";
-import VideoPlayer from "@/components/VideoPlayer";
-import Gallery from "@/components/Gallery";
-import { useRoomStore } from "@/store/useRoomStore";
-import type { Room, Style } from "@/lib/types";
-import type { RoomType } from "@/lib/roomOptions";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function Home() {
-  const { rooms, addRoom, removeRoom, updateRoom } = useRoomStore();
-  const [active, setActive] = useState<Room | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function Splash() {
+  const router = useRouter();
+  const [visible, setVisible] = useState(false);
 
-  const handleGenerate = async (
-    image: string,
-    style: Style,
-    withVideo: boolean,
-    roomType: RoomType,
-    additions: string[],
-    inspoImage: string | null
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/rooms/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image, style, withVideo, roomType, additions, inspoImage }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Generation failed");
-
-      const room: Room = {
-        id: crypto.randomUUID(),
-        createdAt: Date.now(),
-        beforeImage: image,
-        style,
-        afterImage: data.afterImage,
-        inspoImage: inspoImage ?? null,
-        items: data.items,
-        listingCopy: data.listingCopy,
-        videoUrl: null,
-        videoError: null,
-        sourceUrl: data.sourceUrl ?? null,
-        videoLoading: withVideo,
-      };
-
-      addRoom(room);
-      setActive(room);
-
-      if (withVideo && data.sourceUrl) {
-        fetch("/api/rooms/video", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sourceUrl: data.sourceUrl, style }),
-        })
-          .then((r) => r.json())
-          .then((videoData) => {
-            const changes = {
-              videoUrl: videoData.videoUrl ?? null,
-              videoError: videoData.videoError ?? null,
-              videoLoading: false,
-            };
-            updateRoom(room.id, changes);
-            setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
-          })
-          .catch((err) => {
-            const changes = { videoUrl: null, videoError: err?.message ?? "Video generation failed", videoLoading: false };
-            updateRoom(room.id, changes);
-            setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
-          });
-      } else if (withVideo) {
-        const changes = { videoUrl: null, videoError: "No image URL available for video generation", videoLoading: false };
-        updateRoom(room.id, changes);
-        setActive((current) => (current?.id === room.id ? { ...current, ...changes } : current));
-      }
-    } catch (err: any) {
-      setError(err?.message ?? "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    setVisible(true);
+    const t = setTimeout(() => {
+      const questionnaireDone = localStorage.getItem("staged_questionnaire_done");
+      const onboardingDone = localStorage.getItem("staged_onboarding_done");
+      if (questionnaireDone) router.replace("/home");
+      else if (onboardingDone) router.replace("/login");
+      else router.replace("/onboarding");
+    }, 2600);
+    return () => clearTimeout(t);
+  }, [router]);
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-10 space-y-10">
-      <header>
-        <h1 className="text-3xl font-bold">Staged</h1>
-        <p className="text-neutral-500 mt-1">
-          Upload a photo of an empty or ugly room, pick a style, and get a restyled
-          photo, a shoppable furniture list, listing copy, and a video walkthrough.
-        </p>
-      </header>
-
-      <section className="grid md:grid-cols-2 gap-8">
-        <UploadForm onGenerate={handleGenerate} loading={loading} />
-
-        <div className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-red-50 text-red-700 text-sm p-3 border border-red-200">
-              {error}
-            </div>
-          )}
-
-          {active?.afterImage ? (
-            <BeforeAfterSlider beforeSrc={active.beforeImage} afterSrc={active.afterImage} />
-          ) : (
-            <div className="rounded-xl border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-400 h-full flex items-center justify-center">
-              Your before/after will appear here
-            </div>
-          )}
+    <main className="min-h-screen bg-[#0F0F0F] flex flex-col items-center justify-center">
+      <div className={`flex flex-col items-center gap-6 transition-opacity duration-700 ${visible ? "opacity-100" : "opacity-0"}`}>
+        {/* Logo mark */}
+        <div className="anim-scale-in">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="18" fill="white"/>
+            <path d="M14 46 L14 26 L32 14 L50 26 L50 46 Z" stroke="#0F0F0F" strokeWidth="2.5" strokeLinejoin="round" fill="none"/>
+            <rect x="24" y="34" width="16" height="12" rx="1" stroke="#0F0F0F" strokeWidth="2" fill="none"/>
+            <rect x="20" y="26" width="10" height="8" rx="1" stroke="#0F0F0F" strokeWidth="2" fill="none"/>
+          </svg>
         </div>
-      </section>
 
-      {active && (
-        <section className="space-y-6">
-          {active.listingCopy && <ListingCopy copy={active.listingCopy} />}
+        {/* Wordmark */}
+        <div className="anim-fade-up delay-200 text-center">
+          <h1 className="text-white text-4xl font-bold tracking-[0.18em] uppercase">Staged</h1>
+          <p className="text-neutral-500 text-sm mt-2 tracking-widest uppercase">Your space, transformed</p>
+        </div>
+      </div>
 
-          <div>
-            <h2 className="font-semibold mb-3">Shop this look</h2>
-            <ShopGrid items={active.items} />
-          </div>
-
-          <div>
-            <h2 className="font-semibold mb-3">Video walkthrough</h2>
-            <VideoPlayer src={active.videoUrl} error={active.videoError} loading={active.videoLoading} />
-          </div>
-        </section>
-      )}
-
-      <Gallery
-        rooms={rooms}
-        onSelect={setActive}
-        onRemove={(id) => {
-          removeRoom(id);
-          if (active?.id === id) setActive(null);
-        }}
-      />
+      {/* Loading dots */}
+      <div className="absolute bottom-16 flex gap-1.5 anim-fade-in delay-600">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-neutral-600"
+            style={{ animation: `pulse-soft 1.2s ease-in-out ${i * 200}ms infinite` }}
+          />
+        ))}
+      </div>
     </main>
   );
 }
