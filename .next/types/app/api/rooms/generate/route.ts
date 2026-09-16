@@ -1,4 +1,4 @@
-// File: C:\Users\Fatimah\OneDrive\Desktop\decathlon\app\api\rooms\generate\route.ts
+// File: C:\Users\hibas\OneDrive\Desktop\decathlon\app\api\rooms\generate\route.ts
 import * as entry from '../../../../../../app/api/rooms/generate/route.js'
 import type { NextRequest } from 'next/server.js'
 
